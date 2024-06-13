@@ -4,10 +4,10 @@
 These tools were developed for my MSc Data Science dissertation. They are designed to faciliate the reading and formatting data from the *Sheffield Urban Flows Observatory (SUFO)*. 
 
 ## Table of Contents
--[Functionality and Pre-requisites](#Functionality and Pre-requisites)
--[Features](#Features)
--[Example Usage](#Example Usage)
--[Author and Contact](## Author and Contact)
+- [Functionality and Pre-requisites](#Functionality-and-Pre-requisites)
+- [Features](#Features)
+- [Example Usage](#Example-Usage)
+- [Authors](#Authors)
 
 ## Functionality and Pre-requisites
 
@@ -15,6 +15,6 @@ These tools were developed for my MSc Data Science dissertation. They are design
 
 ## Example Usage
 
-## Author and Contact
+## Authors
 SUFO data extraction tools developed by the *Sheffield Urban Flows Obervatory*
 Repo developed by [G-Berwyn](https://github.com/G-Berwyn)]
