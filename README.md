@@ -3,11 +3,19 @@
 
 These tools were developed for my MSc Data Science dissertation. They are designed to faciliate the reading and formatting data from the *Sheffield Urban Flows Observatory (SUFO)*. 
 
+*get_sensor()* retreives data for a specific site over a time period. This is limited to a month maximum.
+
+*parse_sensor* will take a sensor, a larger date range and path to return a pickled (stored) pandas DF. Use this for for larger date ranges, or simply to create a stored variable.
+
 ## Table of Contents
+- [Installing](#Installing)
 - [Functionality and Pre-requisites](#Functionality-and-Pre-requisites)
 - [Features](#Features)
 - [Example Usage](#Example-Usage)
 - [Authors](#Authors)
+  
+## Installing
+To install, copy the contents of the **SUFO_AQ.py** file to your IDE of choice, and save in a place that the current workspace can access. The module can then be imported into scripts.
 
 ## Functionality and Pre-requisites
 
@@ -63,5 +71,6 @@ pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/S0110_2022_10_13")
 Depending on your time range and chosen site, it may take a few minutes for the sensor to collect all data.
 
 ## Authors
-SUFO data extraction tools developed by the *Sheffield Urban Flows Obervatory*
- Repo developed by [G-Berwyn](https://github.com/G-Berwyn)
+SUFO data extraction tools developed by the *Sheffield Urban Flows Obervatory*.
+
+Repo developed by [G-Berwyn](https://github.com/G-Berwyn)
