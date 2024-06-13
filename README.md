@@ -37,6 +37,9 @@ Input:
 - Date_end - the end date in ISO format, e.g. "2023-07-01T01:0:00"
 - pollutant - the pollutant of interest, e.g. PM25
 - moving_avg - optional argument, if set > 0 will append a column with the moving average for the pollutant.
+- Path - destination for the pickled DF.
+
+Output: Pickled DF saved to the described path
 
 ## Features
 
