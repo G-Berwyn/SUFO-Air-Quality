@@ -36,14 +36,29 @@ Input:
 - Date_start - the first date of interest in ISO format, e.g. "2023-07-01T01:0:00"
 - Date_end - the end date in ISO format, e.g. "2023-07-01T01:0:00"
 - pollutant - the pollutant of interest, e.g. PM25
+- time - name of the time column
 - moving_avg - optional argument, if set > 0 will append a column with the moving average for the pollutant.
 - Path - destination for the pickled DF.
 
 Output: Pickled DF saved to the described path
 
+There is no need to specify the entire column name, for example time not data.time
+
 ## Features
 
 ## Example Usage
+
+The below example will read for sensor S0110 between the specified dates for PM25 and save the file to the specified path on my device.
+
+```python
+import SUFO_AQ
+import pandas as pd
+
+#
+SUFO_AQ.parse_sensor("S0110","2022-10-13T14:50:40", "2022-11-10T17:50:40","time","PM25","G:/My Drive/03 Semester 3/SUFO Data/Pickles/")
+pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/S0110_2022_10_13")
+
+```
 
 ## Authors
 SUFO data extraction tools developed by the *Sheffield Urban Flows Obervatory*
