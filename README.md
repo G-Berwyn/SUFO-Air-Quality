@@ -1,7 +1,7 @@
 # SUFO Air Quality
  Repo for Python tools developed to read Air Quality data from the Sheffield Urban Flows Observatory
 
-These tools were developed for my MSc Data Science dissertation. They are designed to faciliate the reading and formatting data from the *Sheffield Urban Flows Observatory (SUFO)*. 
+These tools were developed for my MSc Data Science dissertation. They are designed to faciliate the reading and formatting data from the *Sheffield Urban Flows Observatory (SUFO)*. Currently the only paramters than can be varied are the site location, the dates, and which pollutant you want. QC values at -30000 are removed from the data.
 
 *get_sensor()* retreives data for a specific site over a time period. This is limited to a month maximum.
 
