@@ -2,7 +2,7 @@
 
 #Series of functions to aid in the retrieval of data from SUFO.
 
-def get_sensor(site_id, start, end):
+def get_sensor(site_id:str, start:str, end:str):
     # Function that will call the API to get data for the specified ID and time frame. Ensure that VPN is on, or connected to eduroam.
 
     ## Function connects to the API by creating a request from the input parameters. By default the data will load at the lowest possible frequency.
@@ -11,10 +11,23 @@ def get_sensor(site_id, start, end):
     import pandas as pd
     from datetime import datetime
 
-    #Add a warning for if the date is too long
+    #Check function input types (expecting strings)
+    if not isinstance(site_id,str):
+        raise ValueError(f"Expected 'site_id' to be string, but received {type(site_id).__name__}")
+    if not isinstance(start,str):
+        raise ValueError(f"Expected 'start' to be string, but received {type(start).__name__}")
+    if not isinstance(end,str):
+        raise ValueError(f"Expected 'end' to be string, but received {type(end).__name__}")
+
+    #Convert to datetime objects
     start_dt = datetime.fromisoformat(start)
     end_dt = datetime.fromisoformat(end)
 
+    #Check end is after start
+    if end_dt < start_dt:
+        raise ValueError(f"End date cannot be before start date")
+
+    #Add a warning for if the date is too long
     if (end_dt - start_dt).days > 35:
         raise ValueError("Large timeframe, ensure you are requesting no more than one month")
 
@@ -54,7 +67,7 @@ def get_sensor(site_id, start, end):
         return None
     
 
-def parse_sensor(site_id,date_start, date_end,time_col,pollutant,path, moving_avg = 0):
+def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant:str,path:str, moving_avg:int = 0):
     #Function that accesses the data and saves a pickled pandas DF with the data. 
 
     ## This function takes two elements from the dates list (one start, one end) and loops through the list. Data is retrieved using
@@ -65,8 +78,29 @@ def parse_sensor(site_id,date_start, date_end,time_col,pollutant,path, moving_av
     import SUFO_AQ
     import pandas as pd
 
+    #Check the input types 
+    if not isinstance(site_id,str):
+        raise ValueError(f"Expected 'site_id' to be string, but received {type(site_id).__name__}")
+    if not isinstance(date_start,str):
+        raise ValueError(f"Expected 'date_start' to be string, but received {type(date_start).__name__}")
+    if not isinstance(date_end,str):
+        raise ValueError(f"Expected 'date_end' to be string, but received {type(date_end).__name__}")
+    if not isinstance(time_col,str):
+        raise ValueError(f"Expected 'time_col' to be string, but received {type(time_col).__name__}")
+    if not isinstance(pollutant,str):
+        raise ValueError(f"Expected 'pollutant' to be string, but received {type(pollutant).__name__}")
+    if not isinstance(path,str):
+        raise ValueError(f"Expected 'path' to be string, but received {type(path).__name__}")
+    if not isinstance(moving_avg,int):
+        raise ValueError(f"Expected 'moving_avg' to be an integer, but received {type(moving_avg).__name__}")
+
+    #Convert to datetime objects
     start_dt = datetime.datetime.fromisoformat(date_start)
     end_dt = datetime.datetime.fromisoformat(date_end)
+
+    #Check end is after start
+    if end_dt < start_dt:
+        raise ValueError(f"End date cannot be before start date")
 
     n_days = (end_dt - start_dt).days
 
