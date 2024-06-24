@@ -65,7 +65,7 @@ import pandas as pd
 
 #
 SUFO_AQ.parse_sensor("S0110","2022-10-13T14:50:40", "2022-11-10T17:50:40","time","PM25","G:/My Drive/03 Semester 3/SUFO Data/Pickles/")
-pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/S0110_2022_10_13")
+pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/S0110_20221013_20221110_PM25")
 
 ```
 Depending on your time range and chosen site, it may take a few minutes for the sensor to collect all data.
