@@ -30,41 +30,77 @@ def get_sensor(site_id:str, start:str, end:str):
     #Add a warning for if the date is too long
     if (end_dt - start_dt).days > 35:
         raise ValueError("Large timeframe, ensure you are requesting no more than one month")
-
-    #Create the URL
-    url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start + "&Tto=" + end +"&bySite=" + site_id + "&freqInMin=1&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic&spatial=none"
     
-    #Query the website
-    response = requests.get(url)
-    response.raise_for_status() 
+    # If the site is one of the DEFRA ones we retreive a little differently
+    if (site_id == "UKA00575" or site_id == "UKA00181" or site_id ==  "UKA00622"):
+        url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start + "&Tto=" + end + "&byFamily=defra&freqInMin=1&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic"
 
-    #If there is no data, then the request responds with a HTML, so .json() will fail, use try:except to catch this
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  #error if issue
-        request_data = response.json()
+        #If there is no data, then the request responds with a HTML, so .json() will fail, use try:except to catch this
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  #error if issue
+            request_data = response.json()
+            
+            #Create a dict that will dynamically access the correct site
+            defra_dict = {request_data["bundles"][0]["identity"]["site.id"]:0,
+                    request_data["bundles"][1]["identity"]["site.id"]:1,
+                    request_data["bundles"][2]["identity"]["site.id"]:2}
 
-        #Now parse the JSON and convert to DF
-        #Take the data from the nested element
-        #Check the number of bundles 
-        if request_data["nBundles"] != 1:
-            raise ValueError("More than one sensor in data")
+            #Now parse the JSON and convert to DF
+            #Take the data from the nested element
+            #Check the number of bundles 
+
+            json_data = request_data["bundles"][defra_dict[site_id]]["dataByRow"]
+
+            #convert into a temporary df
+            json_df = pd.DataFrame(json_data)
+            # Modify column names to remove anything before the first "."
+            json_df.columns = json_df.columns.str.split('.').str[1]
+            
+            return json_df
+
+        except requests.exceptions.HTTPError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+            return None
+        except ValueError:  #ValueError will occur for JSON parse failure
+            print("No data for specified parameters")
+            return None
+    else:
+        #Otherwise execute normally
+        #Create the URL
+        url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start + "&Tto=" + end +"&bySite=" + site_id + "&freqInMin=1&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic&spatial=none"
         
-        json_data = request_data["bundles"][0]["dataByRow"]
+        #Query the website
+        response = requests.get(url)
+        response.raise_for_status() 
 
-        #convert into a temporary df
-        json_df = pd.DataFrame(json_data)
-        # Modify column names to remove anything before the first "."
-        json_df.columns = json_df.columns.str.split('.').str[1]
+        #If there is no data, then the request responds with a HTML, so .json() will fail, use try:except to catch this
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  #error if issue
+            request_data = response.json()
 
-        return json_df
-    
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-        return None
-    except ValueError:  #ValueError will occur for JSON parse failure
-        print("No data for specified parameters")
-        return None
+            #Now parse the JSON and convert to DF
+            #Take the data from the nested element
+            #Check the number of bundles 
+            if request_data["nBundles"] != 1:
+                raise ValueError("More than one sensor in data")
+            
+            json_data = request_data["bundles"][0]["dataByRow"]
+
+            #convert into a temporary df
+            json_df = pd.DataFrame(json_data)
+            # Modify column names to remove anything before the first "."
+            json_df.columns = json_df.columns.str.split('.').str[1]
+
+            return json_df
+        
+        except requests.exceptions.HTTPError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+            return None
+        except ValueError:  #ValueError will occur for JSON parse failure
+            print("No data for specified parameters")
+            return None
     
 
 def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant:str,path:str, moving_avg:int = 0):
@@ -152,8 +188,15 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
         all_data_dict = {}
 
         for x in range(len(dates_list) - 1):
+
+            #Name for the dict element
+            df_name = dates_list[x].split("T")[0]
             #Get the sensor data
             df = SUFO_AQ.get_sensor(site_id,dates_list[x],dates_list[x+1])
+
+            ##If blank return nothing
+            if df is None:
+                all_data_dict[df_name] = pd.DataFrame()
 
             ##Check the target columns exist
             if (time_col not in df.columns):
@@ -169,8 +212,7 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
             df[pollutant] = df[pollutant].astype('float64')
 
             # Take just the two columns and store in a dictionary
-            df_name = dates_list[x].split("T")[0]
-
+            
             #If the option is selected, add a column with the moving average
             if moving_avg > 0:
                 ma_col = pollutant + ".MA." + str(moving_avg)
@@ -179,10 +221,13 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
             else:
                 all_data_dict[df_name] = df[[time_col, "ISO_time",pollutant]]
 
+            print(f"Loaded {dates_list[x]} to {dates_list[x +1]}")
+
         #Now we'll output a DF with them concetenated
         frames = [all_data_dict[key] for key in list(all_data_dict.keys())]
         all_data_df = pd.concat(frames)
 
     #Finally pickle
-    fname = site_id + "_" + date_start[:10].replace('-', '_')
+    fname = site_id + "_" + date_start[:10].replace('-', '') + "_" + date_end[:10].replace('-', '') + "_" + pollutant
     all_data_df.to_pickle(path + fname)
+    
