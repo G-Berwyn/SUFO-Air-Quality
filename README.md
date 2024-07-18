@@ -32,6 +32,7 @@ SUFO_Traffic tools to plot sites will also require
 To access the SUFO data extraction tool (DXT) you will also need the University of Sheffield VPN.
 
 There are a number of functions, the key functions are described below with further descriptions in their own documents.
+- [SUFO Air Quality](AQ Descriptions.md)
 
 ### **parse_sensor(site_id,date_start, date_end,pollutant,path)**
 Function that will provide data in a pickled Pandas DF with the time and chosen pollutant. This will retrieve data for the specified time period and save data to a pickle on the path
