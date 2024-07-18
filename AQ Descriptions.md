@@ -22,6 +22,14 @@ Output: Dataframe with data by row from SUFO
 
 Example Usage:
 
+```python
+import SUFO_AQ
+import pandas as pd
+
+SUFO_AQ.get_sensor("S0110","2022-10-13T14:50:40", "2022-11-10T17:50:40")
+
+```
+
 ## parse_sensor(site_id, date_start, date_end, time_col, pollutant, path, moving_average = 0)
 Function that will get data for a large time period for a given site. The function will get data for the specified pollutant and save a pickle on the specified path
 
@@ -39,6 +47,15 @@ Output: A Pandas pickle saved to the specified path. Can be read back into Pytho
 For reading pickles into R, see this [Stack Overflow post](https://stackoverflow.com/questions/35121192/reading-a-pickle-file-pandas-python-data-frame-in-r)
 
 Example usage:
+
+```python
+import SUFO_AQ
+import pandas as pd
+
+SUFO_AQ.parse_sensor("S0110","2022-10-13T14:50:40", "2022-11-10T17:50:40","time","PM25","G:/My Drive/03 Semester 3/SUFO Data/Pickles/")
+pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/S0110_20221013_20221110_PM25")
+
+```
 
 The following functions will likely not be required but are included for compeleteness:
 
