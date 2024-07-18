@@ -68,11 +68,11 @@ def get_sensor(site_id:str, start:str, end:str):
     else:
         #Otherwise execute normally
         #Create the URL
-        url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start + "&Tto=" + end +"&bySite=" + site_id + "&freqInMin=1&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic&spatial=none"
-        
-        #Query the website
-        response = requests.get(url)
-        response.raise_for_status() 
+        url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start + "&Tto=" + end +"&bySite=" + site_id + "&freqInMin=30&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic&spatial=none"
+
+        # We sometimes get an internal error caused by the interval being set to 30, the error happens when the sensor is usually per minute, there is no data and
+        # the server tries to calculate what the 30min data should be, since there is no data to calculate with we get an internal server error. In this case, check
+        # if data gets returned at a 1min interval, if that data is blank, output blank, else give the server error
 
         #If there is no data, then the request responds with a HTML, so .json() will fail, use try:except to catch this
         try:
@@ -94,10 +94,22 @@ def get_sensor(site_id:str, start:str, end:str):
             json_df.columns = json_df.columns.str.split('.').str[1]
 
             return json_df
-        
+
         except requests.exceptions.HTTPError as http_err:
-            print(f"HTTP error occurred: {http_err}")
-            return None
+            if response.status_code == 500:
+                #try a different interval, if this is blank then the error is no data (return none)
+                url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start + "&Tto=" + end +"&bySite=" + site_id + "&freqInMin=1&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic&spatial=none"
+                try:
+                    response = requests.get(url)
+                    response.raise_for_status()  #error if issue
+                    request_data = response.json()
+                except ValueError:  #ValueError will occur for JSON parse failure
+                    print("No data for specified parameters")
+                    return None
+
+            else:
+                print(f"HTTP error occurred: {http_err}")
+                return None
         except ValueError:  #ValueError will occur for JSON parse failure
             print("No data for specified parameters")
             return None
@@ -111,8 +123,10 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
     ## where it can be read into different scripts.
     ## Moving average is an optional parameter, the defualt value is 0 and no column will be added, anything above will give you data
     import datetime
+    from dateutil.relativedelta import relativedelta
     import SUFO_AQ
     import pandas as pd
+    import numpy as np
 
     #Check the input types 
     if not isinstance(site_id,str):
@@ -143,6 +157,8 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
     #If less than 35, we don't need the dict and the function can just pickle straight away
     if n_days <= 35:
         df = SUFO_AQ.get_sensor(site_id,date_start,date_end)
+
+        #If empty DF then return nothing
         if df is None:
             return None
 
@@ -178,14 +194,12 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
             dates_list.append(current_date.strftime("%Y-%m-%dT%H:%M:%S"))
 
             # Move to the next month
-            current_date += datetime.timedelta(days=30)  # Add 30 days (approximately one month)
-
-            # Ensure we're still within bounds of the end
-            if current_date.month > end_dt.month and current_date.year >= end_dt.year:
-                current_date = end_dt 
+            current_date += relativedelta(months=1)  #Add one month
         
         #Create empty dict to store output
         all_data_dict = {}
+
+        print(f"Querying Data for {site_id}")
 
         for x in range(len(dates_list) - 1):
 
@@ -194,8 +208,21 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
             #Get the sensor data
             df = SUFO_AQ.get_sensor(site_id,dates_list[x],dates_list[x+1])
 
-            ##If blank return nothing
+            ##If blank return -15,000 for all values (one a day)
             if df is None:
+                # Create a date range from start_date to end_date
+                date_range = pd.date_range(start=date_start, end=date_end, freq='D')
+
+                # Convert the date range to UNIX timestamps
+                unix_dates = date_range.astype(np.int64) // 10**9
+
+                # Create a DataFrame
+                df = pd.DataFrame({
+                    time_col: unix_dates,
+                    'ISO_time': date_range,
+                    pollutant: -15000
+                })
+
                 all_data_dict[df_name] = pd.DataFrame()
 
             ##Check the target columns exist
@@ -221,7 +248,7 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
             else:
                 all_data_dict[df_name] = df[[time_col, "ISO_time",pollutant]]
 
-            print(f"Loaded {dates_list[x]} to {dates_list[x +1]}")
+            #print(f"Loaded {dates_list[x]} to {dates_list[x +1]}")
 
         #Now we'll output a DF with them concetenated
         frames = [all_data_dict[key] for key in list(all_data_dict.keys())]
@@ -230,4 +257,134 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
     #Finally pickle
     fname = site_id + "_" + date_start[:10].replace('-', '') + "_" + date_end[:10].replace('-', '') + "_" + pollutant
     all_data_df.to_pickle(path + fname)
+
+def qual_calc(site_id:str,date_start:str,date_end:str,pollutant:str,path:str):
+    # Function that will evaluate the data quality for a given sensor, pollutant and time period.
+
     
+    ## Data quality is expressed as the number of days with no data points, this is more relevant to long-term trends.
+    ## The function takes in the site, date range and pollutant. The path is also required to either retrieve a pickle
+    ## or to retreive data from SUFO and store as a pickle. 
+    #Packages for function
+    import SUFO_AQ
+    import pandas as pd
+    import datetime
+
+    #convert dates
+    #Convert to datetime objects
+    start_dt = datetime.datetime.fromisoformat(date_start)
+    end_dt = datetime.datetime.fromisoformat(date_end)
+
+    #Get the data for this one site over the time period
+    ## Check if we have it pickled already
+
+    fname = site_id + "_" + date_start[:10].replace('-', '') + "_" + date_end[:10].replace('-', '') + "_" + pollutant
+
+    try:
+        #Try and read
+        qual_eval = pd.read_pickle(path + fname)
+    except Exception as e:
+        #Else get the data to a pickle and read that
+        SUFO_AQ.parse_sensor(site_id,date_start, date_end,"time",pollutant,path)
+        qual_eval = pd.read_pickle(path + fname)
+
+    #Remove big negative values (these are QC flags)
+    qual_eval = qual_eval[qual_eval[pollutant] > -1000]
+    #Make sure in datetime
+    qual_eval['ISO_time'] = pd.to_datetime(qual_eval['ISO_time'])
+
+    #Group by day and count
+    points_per_day = qual_eval.groupby(qual_eval['ISO_time'].dt.date).size()
+    # Create a date range that covers the entire period of the data
+    date_range = pd.date_range(start = datetime.datetime.strptime("2022-02-01", "%Y-%m-%d"), end=datetime.datetime.strptime("2024-02-01", "%Y-%m-%d"), freq='D')
+    # Reindex to include missing dates, filling missing values with 0
+    points_per_day = points_per_day.reindex(date_range, fill_value=0)
+
+    n_missing = (points_per_day == 0).sum()
+    earliest_date = qual_eval['ISO_time'].min()
+    latest_date = qual_eval['ISO_time'].max()
+
+    return [n_missing,earliest_date,latest_date]
+    
+def sites_qual_eval(sites_list:list, start_date:str,end_date:str,pollutant:str,path:str):
+    # Function that calculautes the data quality for a list of sites
+
+    ## Function inputs a list of sites (can be only one site but must be in a list). The function will iterate over the list and return a DF with the metrics
+    ## Function operates by calling qual_calc() for each site over the time period, then concetentating the metrics into a dict, then a DF to be returned.
+    ## All the sites in the list must be reporting the same pollutant (e.g. All NO2)
+
+    import SUFO_AQ
+    import pandas as pd
+    #Create blank output
+    out_dict = {}
+
+    #Loop through list
+    for site in sites_list:
+        out_list = qual_calc(site,start_date,end_date,pollutant,path)
+
+        out_dict[site] = {
+            'n_missing': out_list[0],
+            'earliest': out_list[1],
+            'latest': out_list[2]
+        }
+    
+    # Convert the dictionary to a DataFrame
+    out_df = pd.DataFrame.from_dict(out_dict, orient='index').reset_index()
+
+    # Rename the columns
+    out_df = out_df.rename(columns={'index': 'site_id', 'n_missing': 'n_missing', 'earliest': 'earliest', 'latest': 'latest'})
+
+    #Return the df
+    return out_df
+
+def calculate_aq_diff(site_id, pollutant):
+    #Function that estimates the difference in air quality one year either side of the CAZ
+
+    import pandas as pd
+
+    data_in = pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/" + site_id + "_20220201_20240601_" + pollutant)
+    data_in = data_in[data_in[pollutant] > -1000]
+    data_in['ISO_time'] = pd.to_datetime(data_in['ISO_time']) # Ensure 'iso_time' is in datetime format
+
+    #Mean Daily concentration
+    daily_mean = data_in.set_index('ISO_time').resample('D').mean().reset_index()
+    #Split before and after CAZ
+
+    # Define the cutoff date
+    cutoff_date = pd.Timestamp('2023-02-27')
+
+    # Filter the DataFrame to include only rows with dates before the cutoff date
+    data_pre = daily_mean[daily_mean['ISO_time'] < cutoff_date]
+    data_pre = data_pre[data_pre['ISO_time'] >= cutoff_date - pd.DateOffset(years=1)]
+
+    data_post = daily_mean[daily_mean['ISO_time'] >= cutoff_date]
+    data_post = data_post[data_post['ISO_time'] < cutoff_date + pd.DateOffset(years=1)]
+
+
+    # Days since year start
+    data_pre.set_index('ISO_time', inplace=True)
+    data_pre['days_since'] = data_pre.index.dayofyear
+
+    data_post.set_index('ISO_time', inplace=True)
+    data_post['days_since'] = data_post.index.dayofyear
+
+    #Remove the index
+    data_post = data_post.reset_index()
+    data_pre = data_pre.reset_index()
+
+    #Column Subset
+    data_pre_sub = data_pre[[pollutant,"days_since"]]
+    pre_name = pollutant + "_pre"
+    data_pre_sub.columns = [pre_name,"days_since"]
+
+
+    data_post_sub = data_post[[pollutant,"days_since"]]
+    post_name = pollutant + "_post"
+    data_post_sub.columns = [post_name,"days_since"]
+
+    #Now merge based on the days and estimate
+    merged_df = pd.merge(data_pre_sub, data_post_sub, on='days_since', how='inner')
+    merged_df['diff'] = merged_df[pre_name] - merged_df[post_name]
+    merged_df['pct_diff'] = ((merged_df[pre_name] - merged_df[post_name]) / merged_df[pre_name]) * 100
+    return merged_df['pct_diff'].mean()
+
