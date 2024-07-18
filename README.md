@@ -1,5 +1,5 @@
 # SUFO Air Quality
- Repo for Python tools developed to read Air Quality data from the Sheffield Urban Flows Observatory
+This is a repo for Python tools developed to read Air Quality data and Traffic information from the Sheffield Urban Flows Observatory
 
 These tools were developed for my MSc Data Science dissertation. They are designed to faciliate the reading and formatting data from the *Sheffield Urban Flows Observatory (SUFO)*. Currently the only paramters than can be varied are the site location, the dates, and which pollutant you want. QC values at -30000 are removed from the data.
 
@@ -24,29 +24,23 @@ Requires Python 3 or later. Key modules required are:
 - **Requests** - connecting to API
 - **datetime** - handling UNIX and ISO timestamps
 
-To access the SUFO data extraction tool (DXT) you will also either need a VPN or be on University Eduroam.
+SUFO_Traffic tools to plot sites will also require
+- **osmnx** - Downloading map data
+- **geopandas** - Plotting maps
+- **shapely** - Annotating maps
 
-Currently there are two key functions. One to retrieve the data from a specific sensor as a DataFrame, and another to return data for a specific sensor over a defined period as a single DF.
+To access the SUFO data extraction tool (DXT) you will also need the University of Sheffield VPN.
 
-### **get_sensor(site_id, start, end)** 
-Function that will call the SUFO DXT API to get data for the specified Site ID and time frame.
-Inputs:
--  Site_id - the site location ID, for example  S0110.
--  Start - the specified start time in ISO format, but as a string e.g. "2023-07-01T01:0:00"
--  End - the specified end time in ISO format
+There are a number of functions, the key functions are described below with further descriptions in their own documents.
 
-Output: DF containing data for the specified parameters
-
-### **parse_sensor(site_id,date_start, date_end,time_col,pollutant,path, moving_avg = 0)**
-Function that will provide data in a pickled Pandas DF with the time and chosen pollutant
+### **parse_sensor(site_id,date_start, date_end,pollutant,path)**
+Function that will provide data in a pickled Pandas DF with the time and chosen pollutant. This will retrieve data for the specified time period and save data to a pickle on the path
 Input:
 - Site_id - the site location ID, for example  S0110.
 - Date_start - the first date of interest in ISO format, e.g. "2023-07-01T01:0:00"
 - Date_end - the end date in ISO format, e.g. "2023-07-01T01:0:00
-- time_col - name of the time column (usually "time")
 - pollutant - the pollutant of interest, e.g. PM25
 - Path - destination for the pickled DF.
-- moving_avg - optional argument, if set > 0 will append a column with the moving average for the pollutant.
 
 Output: Pickled DF saved to the described path
 
