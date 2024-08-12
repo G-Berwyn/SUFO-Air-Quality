@@ -115,13 +115,14 @@ def get_sensor(site_id:str, start:str, end:str):
             return None
     
 
-def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant:str,path:str, moving_avg:int = 0):
+def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant:str,path:str,file_type = "pkl", moving_avg:int = 0):
     #Function that accesses the data and saves a pickled pandas DF with the data. 
 
     ## This function takes two elements from the dates list (one start, one end) and loops through the list. Data is retrieved using
     ## Get sensor, then parsed to only include the desired column and timestamp. Data is then pickled to the specified folder
     ## where it can be read into different scripts.
     ## Moving average is an optional parameter, the defualt value is 0 and no column will be added, anything above will give you data
+    ## By defualt the file type is a pickle, but you can also get a csv, set file_type to "csv"
     import datetime
     from dateutil.relativedelta import relativedelta
     import SUFO_AQ
@@ -254,9 +255,15 @@ def parse_sensor(site_id:str,date_start:str, date_end:str,time_col:str,pollutant
         frames = [all_data_dict[key] for key in list(all_data_dict.keys())]
         all_data_df = pd.concat(frames)
 
-    #Finally pickle
+    #Finally save
+
     fname = site_id + "_" + date_start[:10].replace('-', '') + "_" + date_end[:10].replace('-', '') + "_" + pollutant
-    all_data_df.to_pickle(path + fname)
+    if file_type == "pkl":
+        all_data_df.to_pickle(path + fname)
+    elif file_type == "csv":
+        all_data_df.to_csv(path + fname)
+    else:
+        return TypeError("File type not supported")
 
 def qual_calc(site_id:str,date_start:str,date_end:str,pollutant:str,path:str):
     # Function that will evaluate the data quality for a given sensor, pollutant and time period.
@@ -388,3 +395,7 @@ def calculate_aq_diff(site_id, pollutant):
     merged_df['pct_diff'] = ((merged_df[pre_name] - merged_df[post_name]) / merged_df[pre_name]) * 100
     return merged_df['pct_diff'].mean()
 
+# def locate_AQ_sites:
+#     #Function that allows you to locate AQ sites within a given radius of some coords and a given timeframe.
+
+#     #The function will call the SUFO API to locate sites within the specified radius.
