@@ -428,7 +428,7 @@ def locate_AQ_sites(start_date:str,end_date:str,lat:str,long:str,radius:str):
     n_days = (end_dt - start_dt).days
 
     if n_days <= 35:
-        find_site(start_date,end_date,lat,long,radius)
+        return find_site(start_date,end_date,lat,long,radius)
     else:
         raise ValueError("Please reduce timeframe to fewer than 35 days")
 
