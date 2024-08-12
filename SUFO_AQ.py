@@ -395,7 +395,40 @@ def calculate_aq_diff(site_id, pollutant):
     merged_df['pct_diff'] = ((merged_df[pre_name] - merged_df[post_name]) / merged_df[pre_name]) * 100
     return merged_df['pct_diff'].mean()
 
-# def locate_AQ_sites:
-#     #Function that allows you to locate AQ sites within a given radius of some coords and a given timeframe.
+def locate_AQ_sites(start_date:str,end_date:str,lat:str,long:str,radius:str):
+    #Function that allows you to locate AQ sites within a given radius of some coords and a given timeframe.
 
-#     #The function will call the SUFO API to locate sites within the specified radius.
+    #The function will call the SUFO API to locate sites within the specified radius. For now this is limited to one month
+    import requests
+    import datetime
+    from dateutil.relativedelta import relativedelta
+
+    #First define the function that will retreive the data
+    def find_site(start_date, end_date,lat,long,radius):
+        aq_sites = []
+        url = "https://ufdev21.shef.ac.uk/sufobin/sufoDXT?Tfrom=" + start_date + "&Tto=" + end_date + "&midLon=" + long + "&midLat=" + lat + "&zRad=" + radius + "&bySitesSet=PeakPark,defra_Sheffield,luftdaten,ufloSites&freqInMin=1&qcopt=prunedata&udfnoval=-32768&udfbelow=-32769&udfabove=-32767&hrtFormat=iso8601&tabCont=rich&gdata=byPairId&src=data&op=getdata&fmt=jsonrows&output=zip&tok=generic&spatial=none"
+        response = requests.get(url)
+        response.raise_for_status()  #error if issue
+        request_data = response.json()
+
+        for x in range(0, request_data["nBundles"]):
+            site_id = request_data["bundles"][x]["identity"]["site.id"]
+            aq_sites.append(site_id)
+        
+        return aq_sites
+        
+    #Convert to datetime objects
+    start_dt = datetime.datetime.fromisoformat(start_date)
+    end_dt = datetime.datetime.fromisoformat(end_date)
+
+    #Check end is after start
+    if end_dt < start_dt:
+        raise ValueError(f"End date cannot be before start date")
+
+    n_days = (end_dt - start_dt).days
+
+    if n_days <= 35:
+        find_site(start_date,end_date,lat,long,radius)
+    else:
+        raise ValueError("Please reduce timeframe to fewer than 35 days")
+
