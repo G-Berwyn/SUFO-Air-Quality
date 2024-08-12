@@ -30,7 +30,7 @@ SUFO_AQ.get_sensor("S0110","2022-10-13T14:50:40", "2022-11-10T17:50:40")
 
 ```
 
-## parse_sensor(site_id, date_start, date_end, time_col, pollutant, path, moving_average = 0)
+## parse_sensor(site_id, date_start, date_end, time_col, pollutant, path, moving_average = 0, file_type = "pkl")
 Function that will get data for a large time period for a given site. The function will get data for the specified pollutant and save a pickle on the specified path
 
 Inputs:
@@ -41,6 +41,7 @@ Inputs:
 - pollutant - String with your pollutant of interest, e.g "NO2"
 - path = String with the filepath to save your pickles
 - moving_average - Int, by default 0 but can include, recommended to re-sample data later using daily or hourly.
+- file_type - The type of file you want to save, by default this is a pickle (pkl) but can also be "csv". No other are currently supported.
 
 Output: A Pandas pickle saved to the specified path. Can be read back into Python.
 
