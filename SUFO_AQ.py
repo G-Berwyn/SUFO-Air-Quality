@@ -402,6 +402,7 @@ def locate_AQ_sites(start_date:str,end_date:str,lat:str,long:str,radius:str):
     import requests
     import datetime
     from dateutil.relativedelta import relativedelta
+    import pandas as pd
 
     #First define the function that will retreive the data
     def find_site(start_date, end_date,lat,long,radius):
@@ -412,8 +413,13 @@ def locate_AQ_sites(start_date:str,end_date:str,lat:str,long:str,radius:str):
         request_data = response.json()
 
         for x in range(0, request_data["nBundles"]):
+            #Get the site name and coordinates
             site_id = request_data["bundles"][x]["identity"]["site.id"]
-            aq_sites.append(site_id)
+            coords = request_data["bundles"][x]["location"]["latitude"],request_data["bundles"][0]["location"]["longitude"]
+
+            #Now get the reported pollutants (and other data)
+            out_list = [item.split(".")[1] for item in request_data["bundles"][x]["outKeys"]]
+            aq_sites.append([site_id,coords,out_list])
         
         return aq_sites
         
@@ -431,4 +437,5 @@ def locate_AQ_sites(start_date:str,end_date:str,lat:str,long:str,radius:str):
         return find_site(start_date,end_date,lat,long,radius)
     else:
         raise ValueError("Please reduce timeframe to fewer than 35 days")
+
 
