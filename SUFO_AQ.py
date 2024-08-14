@@ -415,7 +415,7 @@ def locate_AQ_sites(start_date:str,end_date:str,lat:str,long:str,radius:str):
         for x in range(0, request_data["nBundles"]):
             #Get the site name and coordinates
             site_id = request_data["bundles"][x]["identity"]["site.id"]
-            coords = request_data["bundles"][x]["location"]["latitude"],request_data["bundles"][0]["location"]["longitude"]
+            coords = request_data["bundles"][x]["location"]["latitude"],request_data["bundles"][x]["location"]["longitude"]
 
             #Now get the reported pollutants (and other data)
             out_list = [item.split(".")[1] for item in request_data["bundles"][x]["outKeys"]]
