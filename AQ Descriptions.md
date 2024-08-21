@@ -5,6 +5,7 @@ Below is a description of all the functions included in the SUFO AQ package and 
 # Included Functions
 - get_sensor
 - parse_sensor
+- locate_AQ_sites
 - qual_calc
 - sites_qual_eval
 - calculate_aq_diff
@@ -58,7 +59,22 @@ pd.read_pickle("G:/My Drive/03 Semester 3/SUFO Data/Pickles/S0110_20221013_20221
 
 ```
 
-The following functions will likely not be required but are included for compeleteness:
+## locate_AQ_sites(start_date,end_date,lat,long,radius)
+Function that will provide the names, locations and pollutants reported through the SUFO platform within a given proximity to a set of coordinates. Use this to locate AQ sites.
+
+Inputs:
+- start_date - String with the start date and time e.g."2022-10-13T14:50:40"
+- end_date - String with the end date and time
+- lat = Latitude of a particular point as a string
+- long - Longitude of a point as a string
+- radius - Radius from point in which to search for sites
+
+Currently the dates are limited to a span of one day only, as retrieving more data slows the function. 
+
+Outputs: A list containing the site name, a tuple with the coordinated and a list of the pollutants recorded
+
+
+*The following functions will likely not be required but are included for compeleteness:*
 
 ## qual_calc(site_id,date_start,date_end,pollutant,path)
 Function that will calculate the number of missing values, eraliest date and latest date for a particular site
